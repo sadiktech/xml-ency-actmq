@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:encryption="http://www.mulesoft.org/schema/mule/encryption" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/encryption http://www.mulesoft.org/schema/mule/encryption/current/mule-encryption.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <encryption:config name="Encryption" defaultEncrypter="XML_ENCRYPTER" doc:name="Encryption">
+        <encryption:xml-encrypter-config key="mahindracomviva1" xpath="/SADIK/ALI/CITY"/>
+    </encryption:config>
+    <jms:activemq-connector name="Active_MQ" username="admin" password="admin" brokerURL="tcp://localhost:61716" validateConnections="true" doc:name="Active MQ"/>
+    <flow name="xml-ency-actmqFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/xmlactivemq" allowedMethods="POST" doc:name="HTTP"/>
+        <object-to-string-transformer doc:name="Object to String"/>
+        <encryption:encrypt config-ref="Encryption" using="XML_ENCRYPTER" doc:name="Encryption">
+            <encryption:xml-encrypter key="mahindracomviva1" xpath="/SADIK/ALI/CITY" algorithm="AES_128"/>
+        </encryption:encrypt>
+        <jms:outbound-endpoint queue="pgp-active-mp-demo" connector-ref="Active_MQ" doc:name="JMS"/>
+        <object-to-string-transformer doc:name="Object to String"/>
+        <set-payload value="Message sent to que : #[payload]" doc:name="Set Payload"/>
+    </flow>
+    <flow name="xml-ency-actmqFlow1">
+        <jms:inbound-endpoint queue="pgp-active-mp-demo" connector-ref="Active_MQ" doc:name="JMS"/>
+        <encryption:decrypt config-ref="Encryption" using="XML_ENCRYPTER" doc:name="Encryption"/>
+        <object-to-string-transformer doc:name="Object to String"/>
+        <logger message="Final log :  #[payload]" level="INFO" doc:name="Logger"/>
+    </flow>
+</mule>
